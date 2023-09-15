@@ -30,8 +30,8 @@ export function useCollection<TDocument>(
   collectionId: string,
   queries: string[] = [],
   options = {
-    loadAll: false,
-    addFirst: false,
+    // loadAll: false,
+    // addFirst: false,
     realtime: true,
   },
   queryOptions?: UseInfiniteQueryOptions<
@@ -48,7 +48,7 @@ export function useCollection<TDocument>(
   const queryResult = useInfiniteQuery({
     queryKey,
     queryFn: async (param) => {
-      console.log("param", param);
+      // console.log("param", param);
       if (!param.pageParam)
         return await databases.listDocuments<DatabaseDocument<TDocument>>(
           databaseId,
@@ -100,7 +100,7 @@ export function useCollection<TDocument>(
     },
     ...queryOptions,
   });
-  console.log(options);
+  // console.log(options);
   useEffect(() => {
     if (options.realtime) {
       const unsubscribe = databases.client.subscribe(
