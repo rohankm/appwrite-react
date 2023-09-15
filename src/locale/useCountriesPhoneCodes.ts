@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
-import { Models } from 'appwrite'
-import { useAppwrite } from 'react-appwrite'
+import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
+import { Models } from "appwrite";
+import { useAppwrite } from "../index";
 
-const queryKey = ['appwrite', 'locale', 'countries', 'phones']
+const queryKey = ["appwrite", "locale", "countries", "phones"];
 
 /**
  * Access to a list of all countries' phone codes.
@@ -14,19 +14,19 @@ const queryKey = ['appwrite', 'locale', 'countries', 'phones']
 export function useCountriesPhoneCodes(
   options?: UseQueryOptions<Models.Phone[], unknown, Models.Phone[], string[]>
 ) {
-  const { locale } = useAppwrite()
+  const { locale } = useAppwrite();
   const queryResult = useQuery({
     queryKey,
     queryFn: async () => {
-      const response = await locale.listCountriesPhones()
+      const response = await locale.listCountriesPhones();
 
-      return response.phones
+      return response.phones;
     },
 
     cacheTime: Infinity,
 
     ...options,
-  })
+  });
 
-  return queryResult
+  return queryResult;
 }

@@ -9,12 +9,12 @@ import {
 } from "@tanstack/react-query";
 import { Models } from "appwrite";
 import { useEffect, useMemo } from "react";
-import { Query, useAppwrite } from "react-appwrite";
+import { Query, useAppwrite } from "../index";
 import type {
   DatabaseDocumentOperation,
   DatabaseDocument,
   DatabaseCollection,
-} from "react-appwrite/databases/types";
+} from "./types";
 
 /**
  * Fetches a collection from a database.

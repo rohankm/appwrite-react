@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { UseQueryOptions, useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
-import { useAppwrite } from 'react-appwrite'
+import { UseQueryOptions, useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useAppwrite } from "../index";
 
 /**
  * Retrieves a file URL for download.
@@ -16,23 +16,26 @@ export function useFileDownload(
   fileId?: string,
   options?: UseQueryOptions<URL | null, unknown, URL | null, (string | void)[]>
 ) {
-  const { storage } = useAppwrite()
-  const queryKey = useMemo(() => ['appwrite', 'storage', 'downloads', bucketId, fileId], [bucketId, fileId])
+  const { storage } = useAppwrite();
+  const queryKey = useMemo(
+    () => ["appwrite", "storage", "downloads", bucketId, fileId],
+    [bucketId, fileId]
+  );
   const queryResult = useQuery({
     queryKey,
     enabled: !!bucketId && !!fileId,
     queryFn: ({ queryKey: [, , , bucketId, fileId] }) => {
       if (bucketId && fileId) {
-        return storage.getFileDownload(bucketId, fileId)
+        return storage.getFileDownload(bucketId, fileId);
       }
 
-      return null
+      return null;
     },
 
     cacheTime: 0,
 
     ...options,
-  })
+  });
 
-  return queryResult
+  return queryResult;
 }

@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import { useQuery, UseQueryOptions } from '@tanstack/react-query'
-import { useMemo } from 'react'
-import { useAppwrite } from 'react-appwrite'
-import type { Preview } from './types'
+import { useQuery, UseQueryOptions } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useAppwrite } from "../index";
+import type { Preview } from "./types";
 
 /**
  * Get a file preview image.
@@ -19,12 +19,17 @@ export function useFilePreview(
   preview?: Preview,
   options?: UseQueryOptions<URL, unknown, URL, string[]>
 ) {
-  const { storage } = useAppwrite()
-  const queryKey = useMemo(() => ['appwrite', 'storage', 'previews', bucketId, fileId], [bucketId, fileId])
+  const { storage } = useAppwrite();
+  const queryKey = useMemo(
+    () => ["appwrite", "storage", "previews", bucketId, fileId],
+    [bucketId, fileId]
+  );
   const queryResult = useQuery({
     queryKey,
     queryFn: async ({ queryKey: [, , , bucketId, fileId] }) => {
-      return storage.getFilePreview(bucketId, fileId,
+      return storage.getFilePreview(
+        bucketId,
+        fileId,
         preview?.dimensions?.width,
         preview?.dimensions?.height,
         preview?.gravity,
@@ -36,13 +41,13 @@ export function useFilePreview(
         preview?.rotation,
         preview?.background,
         preview?.output
-      )
+      );
     },
 
     cacheTime: 0,
 
     ...options,
-  })
+  });
 
-  return queryResult
+  return queryResult;
 }

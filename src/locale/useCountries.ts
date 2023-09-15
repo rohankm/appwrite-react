@@ -1,12 +1,17 @@
-'use client'
+"use client";
 
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
-import { Models } from 'appwrite'
-import { useMemo } from 'react'
-import { useAppwrite } from 'react-appwrite'
-import type { LocaleCountryType } from './types'
+import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
+import { Models } from "appwrite";
+import { useMemo } from "react";
+import { useAppwrite } from "../index";
+import type { LocaleCountryType } from "./types";
 
-type LocalCountriesQueryKey = ['appwrite', 'locale', 'countries', { type: LocaleCountryType }]
+type LocalCountriesQueryKey = [
+  "appwrite",
+  "locale",
+  "countries",
+  { type: LocaleCountryType }
+];
 
 /**
  * Access to a list of all countries.
@@ -15,30 +20,37 @@ type LocalCountriesQueryKey = ['appwrite', 'locale', 'countries', { type: Locale
  * @link [Appwrite Documentation](https://appwrite.io/docs/client/locale?sdk=web-default#localeListCountries)
  */
 export function useCountries(
-  type: LocaleCountryType = 'all',
-  options?: UseQueryOptions<Models.Country[], unknown, Models.Country[], LocalCountriesQueryKey>
+  type: LocaleCountryType = "all",
+  options?: UseQueryOptions<
+    Models.Country[],
+    unknown,
+    Models.Country[],
+    LocalCountriesQueryKey
+  >
 ) {
-  const { locale } = useAppwrite()
-  const queryKey = useMemo(() => ['appwrite', 'locale', 'countries', { type }], [type]) as LocalCountriesQueryKey
+  const { locale } = useAppwrite();
+  const queryKey = useMemo(
+    () => ["appwrite", "locale", "countries", { type }],
+    [type]
+  ) as LocalCountriesQueryKey;
   const queryResult = useQuery({
     queryKey,
     queryFn: async ({ queryKey: [, , , { type }] }) => {
-      let response: Models.CountryList
+      let response: Models.CountryList;
 
-      if (type === 'all') {
-        response = await locale.listCountries()
-      }
-      else {
-        response = await locale.listCountriesEU()
+      if (type === "all") {
+        response = await locale.listCountries();
+      } else {
+        response = await locale.listCountriesEU();
       }
 
-      return response.countries
+      return response.countries;
     },
 
     cacheTime: Infinity,
 
     ...options,
-  })
+  });
 
-  return queryResult
+  return queryResult;
 }

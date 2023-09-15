@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
-import { Models } from 'appwrite'
-import { useAppwrite } from 'react-appwrite'
+import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
+import { Models } from "appwrite";
+import { useAppwrite } from "../index";
 
-const queryKey = ['appwrite', 'locale', 'currencies']
+const queryKey = ["appwrite", "locale", "currencies"];
 
 /**
  * Access to a list of all currencies.
@@ -12,21 +12,26 @@ const queryKey = ['appwrite', 'locale', 'currencies']
  * @link [Appwrite Documentation](https://appwrite.io/docs/client/locale?sdk=web-default#localeListCurrencies)
  */
 export function useCurrencies(
-  options?: UseQueryOptions<Models.Currency[], unknown, Models.Currency[], string[]>
+  options?: UseQueryOptions<
+    Models.Currency[],
+    unknown,
+    Models.Currency[],
+    string[]
+  >
 ) {
-  const { locale } = useAppwrite()
+  const { locale } = useAppwrite();
   const queryResult = useQuery({
     queryKey,
     queryFn: async () => {
-      const response = await locale.listCurrencies()
+      const response = await locale.listCurrencies();
 
-      return response.currencies
+      return response.currencies;
     },
 
     cacheTime: Infinity,
 
     ...options,
-  })
+  });
 
-  return queryResult
+  return queryResult;
 }

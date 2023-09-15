@@ -1,39 +1,44 @@
-'use client'
+"use client";
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Models } from 'appwrite'
-import { useAppwrite } from 'react-appwrite'
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Models } from "appwrite";
+import { useAppwrite } from "../index";
 
 type TRequest = {
-  sessionId?: string,
-}
+  sessionId?: string;
+};
 
 /**
  * Delete current or the specified session.
  * @link [Appwrite Documentation](https://appwrite.io/docs/client/account?sdk=web-default#accountDeleteSession)
  */
 function useSignOut() {
-  const { account: accountService } = useAppwrite()
-  const queryClient = useQueryClient()
-  const mutation = useMutation<Models.Session | void, unknown, TRequest | undefined | void, unknown>({
-    mutationFn: async request => {
+  const { account: accountService } = useAppwrite();
+  const queryClient = useQueryClient();
+  const mutation = useMutation<
+    Models.Session | void,
+    unknown,
+    TRequest | undefined | void,
+    unknown
+  >({
+    mutationFn: async (request) => {
       if (!request?.sessionId) {
-        return void await accountService.deleteSession('current')
+        return void (await accountService.deleteSession("current"));
       }
 
-      const session = await accountService.getSession(request.sessionId)
+      const session = await accountService.getSession(request.sessionId);
 
-      accountService.deleteSession(session.$id)
+      accountService.deleteSession(session.$id);
 
-      return session
+      return session;
     },
 
     onSuccess: async () => {
-      queryClient.setQueryData(['appwrite', 'account'], null)
+      queryClient.setQueryData(["appwrite", "account"], null);
     },
-  })
+  });
 
-  return mutation
+  return mutation;
 }
 
-export { useSignOut }
+export { useSignOut };

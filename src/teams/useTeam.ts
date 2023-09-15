@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
-import { useAppwrite } from 'react-appwrite'
+import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
+import { useAppwrite } from "../index";
 
 /**
  * Access to a team by its ID.
@@ -10,14 +10,14 @@ import { useAppwrite } from 'react-appwrite'
  * @link [Appwrite Documentation](https://appwrite.io/docs/client/teams?sdk=web-default#teamsGet)
  */
 export function useTeam(teamId: string) {
-  const { teams } = useAppwrite()
-  const queryKey = useMemo(() => ['appwrite', 'teams', teamId], [teamId])
+  const { teams } = useAppwrite();
+  const queryKey = useMemo(() => ["appwrite", "teams", teamId], [teamId]);
   const queryResult = useQuery({
     queryKey,
     queryFn: async ({ queryKey: [, , teamId] }) => {
-      return await teams.get(teamId)
+      return await teams.get(teamId);
     },
-  })
+  });
 
-  return queryResult
+  return queryResult;
 }

@@ -1,37 +1,45 @@
-'use client'
+"use client";
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { ID, Models } from 'appwrite'
-import { useAppwrite } from 'react-appwrite'
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ID, Models } from "appwrite";
+import { useAppwrite } from "../index";
 
 type Props = {
-  teamId?: string,
-  name: string,
-  roles?: string[],
-}
+  teamId?: string;
+  name: string;
+  roles?: string[];
+};
 
 /**
  * Create a new Team
  * @link [Appwrite Documentation](https://appwrite.io/docs/client/teams?sdk=web-default#teamsCreate)
  */
 export function useTeamCreate<Preferences extends Models.Preferences>() {
-  const queryClient = useQueryClient()
-  const { teams } = useAppwrite()
-  const mutation = useMutation<Models.Team<Preferences>, unknown, Props, unknown>({
+  const queryClient = useQueryClient();
+  const { teams } = useAppwrite();
+  const mutation = useMutation<
+    Models.Team<Preferences>,
+    unknown,
+    Props,
+    unknown
+  >({
     mutationFn: async ({ teamId, name, roles }) => {
-      return teams.create(teamId ?? ID.unique(), name, roles)
+      return teams.create(teamId ?? ID.unique(), name, roles);
     },
 
     onSuccess: async (team) => {
-      queryClient.setQueryData<Models.Team<Preferences>[]>(['appwrite', 'teams'], (previousTeams) => {
-        if (previousTeams) {
-          return [...previousTeams, team]
+      queryClient.setQueryData<Models.Team<Preferences>[]>(
+        ["appwrite", "teams"],
+        (previousTeams) => {
+          if (previousTeams) {
+            return [...previousTeams, team];
+          }
+
+          return [team];
         }
+      );
+    },
+  });
 
-        return [team]
-      })
-    }
-  })
-
-  return mutation
+  return mutation;
 }

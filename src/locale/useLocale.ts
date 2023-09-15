@@ -1,11 +1,11 @@
-'use client'
+"use client";
 
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
-import { Models } from 'appwrite'
-import { useAppwrite } from 'react-appwrite'
-import { useAccount } from 'react-appwrite/account'
+import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
+import { Models } from "appwrite";
+import { useAppwrite } from "../index";
+import { useAccount } from "../account";
 
-const queryKey = ['appwrite', 'account', 'locale']
+const queryKey = ["appwrite", "account", "locale"];
 
 /**
  * Access to the local user's locale.
@@ -15,15 +15,15 @@ const queryKey = ['appwrite', 'account', 'locale']
 export function useLocale(
   options?: UseQueryOptions<Models.Locale, unknown, Models.Locale, string[]>
 ) {
-  const { locale } = useAppwrite()
-  const { data: account } = useAccount()
+  const { locale } = useAppwrite();
+  const { data: account } = useAccount();
   const queryResult = useQuery({
     enabled: !!account,
     queryKey,
     queryFn: async () => await locale.get(),
 
     ...options,
-  })
+  });
 
-  return queryResult
+  return queryResult;
 }

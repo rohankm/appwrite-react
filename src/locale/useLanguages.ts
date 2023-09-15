@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { useQuery, type UseQueryOptions } from '@tanstack/react-query'
-import { Models } from 'appwrite'
-import { useAppwrite } from 'react-appwrite'
+import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
+import { Models } from "appwrite";
+import { useAppwrite } from "../index";
 
-const queryKey = ['appwrite', 'locale', 'languages']
+const queryKey = ["appwrite", "locale", "languages"];
 
 /**
  * Access to a list of all languages.
@@ -12,21 +12,26 @@ const queryKey = ['appwrite', 'locale', 'languages']
  * @link [Appwrite Documentation](https://appwrite.io/docs/client/locale?sdk=web-default#localeListLanguages)
  */
 export function useLanguages(
-  options?: UseQueryOptions<Models.Language[], unknown, Models.Language[], string[]>
+  options?: UseQueryOptions<
+    Models.Language[],
+    unknown,
+    Models.Language[],
+    string[]
+  >
 ) {
-  const { locale } = useAppwrite()
+  const { locale } = useAppwrite();
   const queryResult = useQuery({
     queryKey,
     queryFn: async () => {
-      const response = await locale.listLanguages()
+      const response = await locale.listLanguages();
 
-      return response.languages
+      return response.languages;
     },
 
     cacheTime: Infinity,
 
     ...options,
-  })
+  });
 
-  return queryResult
+  return queryResult;
 }
