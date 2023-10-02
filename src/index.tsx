@@ -1,72 +1,119 @@
-import { Account, AppwriteException, Avatars, Client, Databases, Functions, Locale, Storage, Teams } from 'appwrite'
-import { createContext, useContext, useMemo, type ReactNode } from 'react'
-import { QueryClient, type QueryClientConfig, QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import type { DevtoolsOptions } from '@tanstack/react-query-devtools/build/lib/devtools'
-import { defaultMutationOptions, defaultQueryOptions, queryClient } from './query'
+import {
+  Account,
+  AppwriteException,
+  Avatars,
+  Client,
+  Databases,
+  Functions,
+  Locale,
+  Storage,
+  Teams,
+} from "appwrite";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
+import {
+  QueryClient,
+  type QueryClientConfig,
+  QueryClientProvider,
+} from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import type { DevtoolsOptions } from "@tanstack/react-query-devtools/build/lib/devtools";
+import {
+  defaultMutationOptions,
+  defaultQueryOptions,
+  queryClient,
+} from "./query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 
-export * from './account'
-export * from './avatars'
-export * from './databases'
-export * from './functions'
-export * from './locale'
-export * from './storage'
-export * from './teams'
+export * from "./account";
+export * from "./avatars";
+export * from "./databases";
+export * from "./functions";
+export * from "./locale";
+export * from "./storage";
+export * from "./teams";
 
 export type AppwriteContextType = {
-  client: Client,
-  account: Account,
-  avatars: Avatars,
-  databases: Databases,
-  functions: Functions,
-  locale: Locale,
-  storage: Storage,
-  teams: Teams,
-}
+  client: Client;
+  account: Account;
+  avatars: Avatars;
+  databases: Databases;
+  functions: Functions;
+  locale: Locale;
+  storage: Storage;
+  teams: Teams;
+};
 
 type Props = {
-  client: Client,
-  children: ReactNode,
-  devTools?: boolean | DevtoolsOptions,
-  queryClient?: QueryClient,
-}
+  client: Client;
+  children: ReactNode;
+  devTools?: boolean | DevtoolsOptions;
+  queryClient?: QueryClient;
+  persister?: any;
+};
 
-export function AppwriteProvider({ client, children, devTools, ...props }: Props) {
-  const value = useMemo<AppwriteContextType>(() => ({
-    client,
-    account: new Account(client),
-    avatars: new Avatars(client),
-    databases: new Databases(client),
-    functions: new Functions(client),
-    locale: new Locale(client),
-    storage: new Storage(client),
-    teams: new Teams(client),
-  }), [])
+export function AppwriteProvider({
+  client,
+  children,
+  devTools,
+  persister,
+  ...props
+}: Props) {
+  const value = useMemo<AppwriteContextType>(
+    () => ({
+      client,
+      account: new Account(client),
+      avatars: new Avatars(client),
+      databases: new Databases(client),
+      functions: new Functions(client),
+      locale: new Locale(client),
+      storage: new Storage(client),
+      teams: new Teams(client),
+    }),
+    []
+  );
+
+  if (persister) {
+    return (
+      <AppwriteContext.Provider value={value}>
+        <PersistQueryClientProvider
+          client={props.queryClient || queryClient}
+          persistOptions={{ persister }}
+        >
+          {children}
+
+          {devTools && (
+            <ReactQueryDevtools
+              {...(typeof devTools === "boolean" ? {} : devTools)}
+            />
+          )}
+        </PersistQueryClientProvider>
+      </AppwriteContext.Provider>
+    );
+  }
 
   return (
-    <AppwriteContext.Provider
-      value={value}
-    >
-      <QueryClientProvider
-        client={props.queryClient || queryClient}
-      >
+    <AppwriteContext.Provider value={value}>
+      <QueryClientProvider client={props.queryClient || queryClient}>
         {children}
 
-        {
-          devTools &&
+        {devTools && (
           <ReactQueryDevtools
-            {...(typeof devTools === 'boolean' ? {} : devTools)}
+            {...(typeof devTools === "boolean" ? {} : devTools)}
           />
-        }
+        )}
       </QueryClientProvider>
     </AppwriteContext.Provider>
-  )
+  );
 }
 
 // @ts-ignore
-export const AppwriteContext = createContext<AppwriteContextType>()
-export const useAppwrite = () => useContext(AppwriteContext)
+export const AppwriteContext = createContext<AppwriteContextType>();
+export const useAppwrite = () => useContext(AppwriteContext);
 
 export const isAppwriteError = (error: unknown): error is AppwriteException => {
-  return typeof error === 'object' && !!error && (error as any).name === 'AppwriteException'
-}
+  return (
+    typeof error === "object" &&
+    !!error &&
+    (error as any).name === "AppwriteException"
+  );
+};
