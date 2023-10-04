@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  type InfiniteData,
   useInfiniteQuery,
   UseInfiniteQueryOptions,
   useQuery,
@@ -111,40 +112,141 @@ export function useCollection<TDocument>(
           ) as RegExpMatchArray;
           const document = response.payload as DatabaseDocument<TDocument>;
 
-          switch (operation as DatabaseDocumentOperation) {
-            case "create":
-            case "update":
-            case "delete":
-              queryClient.setQueryData(
-                [
-                  "appwrite",
-                  "databases",
-                  databaseId,
-                  collectionId,
-                  "documents",
-                  document.$id,
-                ],
-                document
-              );
+          const validate = queries.reduce((acc, data) => {
+            const split = data.split('"');
+            if (split[0].includes("equal")) {
+              const condition = split[1];
+              const value = split[3];
 
-              // This is not optimal, but is needed until this is implemented.
-              // https://github.com/appwrite/appwrite/issues/2490
-              queryClient.invalidateQueries({
-                queryKey,
-                exact: true,
-              });
+              return acc && document?.[condition] == value;
+            }
+            return acc;
+          }, true);
+          if (validate) {
+            switch (operation as DatabaseDocumentOperation) {
+              // case "create":
+              // case "update":
+              // case "delete":
+              //   queryClient.setQueryData(
+              //     [
+              //       "appwrite",
+              //       "databases",
+              //       databaseId,
+              //       collectionId,
+              //       "documents",
+              //       document.$id,
+              //     ],
+              //     document
+              //   );
 
-              break;
-            // case 'delete':
-            //   queryClient.setQueryData<Models.DocumentList<DatabaseDocument<TDocument>>>(queryKey, collection => {
-            //     if (collection?.documents) {
-            //       return collection.documents.filter(storedDocument => storedDocument.$id !== document.$id)
-            //     }
+              // // This is not optimal, but is needed until this is implemented.
+              // // https://github.com/appwrite/appwrite/issues/2490
+              // queryClient.invalidateQueries({
+              //   queryKey,
+              //   exact: true,
+              // });
 
-            //     return collection
-            //   })
+              // break;
+              case "create":
+                queryClient.setQueryData(
+                  [
+                    "appwrite",
+                    "databases",
+                    databaseId,
+                    collectionId,
+                    "documents",
+                    document.$id,
+                  ],
+                  document
+                );
+                queryClient.setQueryData<
+                  InfiniteData<
+                    Array<Models.DocumentList<DatabaseDocument<TDocument>>>
+                  >
+                  /* @ts-ignore */
+                >(queryKey, (oldData) => {
+                  if (!oldData) return oldData;
+                  const newData =
+                    oldData.pages[0][0].documents.unshift(document);
 
-            //   break
+                  return {
+                    ...oldData,
+                    pages: newData,
+                  };
+                });
+                break;
+
+              case "update":
+                queryClient.setQueryData(
+                  [
+                    "appwrite",
+                    "databases",
+                    databaseId,
+                    collectionId,
+                    "documents",
+                    document.$id,
+                  ],
+                  document
+                );
+                queryClient.setQueryData<
+                  InfiniteData<
+                    Array<Models.DocumentList<DatabaseDocument<TDocument>>>
+                  >
+                  /* @ts-ignore */
+                >(queryKey, (oldData) => {
+                  if (!oldData) return oldData;
+                  const newData = oldData.pages.map((page) =>
+                    page.map((collection) => {
+                      if (collection?.documents) {
+                        return collection.documents.map((storedDocument) => {
+                          if (storedDocument.$id !== document.$id) {
+                            return document;
+                          } else {
+                            return storedDocument;
+                          }
+                        });
+                      }
+
+                      return collection;
+                    })
+                  );
+
+                  return {
+                    ...oldData,
+                    pages: newData,
+                  };
+                });
+                break;
+
+              case "delete":
+                queryClient.setQueryData<
+                  InfiniteData<
+                    Array<Models.DocumentList<DatabaseDocument<TDocument>>>
+                  >
+                  /* @ts-ignore */
+                >(queryKey, (oldData) => {
+                  if (!oldData) return oldData;
+                  const newData = oldData.pages.map((page) =>
+                    page.map((collection) => {
+                      if (collection?.documents) {
+                        return collection.documents.filter(
+                          (storedDocument) =>
+                            storedDocument.$id !== document.$id
+                        );
+                      }
+
+                      return collection;
+                    })
+                  );
+
+                  return {
+                    ...oldData,
+                    pages: newData,
+                  };
+                });
+
+                break;
+            }
           }
         }
       );
@@ -152,7 +254,7 @@ export function useCollection<TDocument>(
       return unsubscribe;
     }
     return;
-  }, [databaseId, collectionId, queryKey, options]);
+  }, [databaseId, collectionId, queryKey, options, queries]);
 
   const flattenData = useMemo(() => {
     return {
@@ -160,5 +262,6 @@ export function useCollection<TDocument>(
       total: queryResult?.data?.pages[0].total,
     };
   }, [queryResult.data]);
+
   return { ...queryResult, flattenData };
 }
