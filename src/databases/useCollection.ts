@@ -16,6 +16,8 @@ import type {
   DatabaseDocument,
   DatabaseCollection,
 } from "./types";
+import produce from "immer";
+const DefaultOptions = { addFirst: false, realtime: true };
 
 /**
  * Fetches a collection from a database.
@@ -30,9 +32,12 @@ export function useCollection<TDocument>(
   databaseId: string,
   collectionId: string,
   queries: string[] = [],
-  options = {
+  options: {
+    addFirst?: boolean;
+    realtime?: boolean;
+  } = {
     // loadAll: false,
-    // addFirst: false,
+    addFirst: false,
     realtime: true,
   },
   queryOptions?: UseInfiniteQueryOptions<
@@ -40,6 +45,9 @@ export function useCollection<TDocument>(
     unknown
   >
 ) {
+  const finalOptions = useMemo(() => {
+    return { ...DefaultOptions, ...options };
+  }, [options]);
   const { databases } = useAppwrite();
   const queryClient = useQueryClient();
   const queryKey = useMemo(
@@ -101,12 +109,13 @@ export function useCollection<TDocument>(
     },
     ...queryOptions,
   });
-  // console.log(options);
+  // console.log("finalOptions", finalOptions);
   useEffect(() => {
-    if (options.realtime) {
+    if (finalOptions.realtime) {
       const unsubscribe = databases.client.subscribe(
         `databases.${databaseId}.collections.${collectionId}.documents`,
         (response) => {
+          console.log("realtimeee");
           const [, operation] = response.events[0].match(
             /\.(\w+)$/
           ) as RegExpMatchArray;
@@ -116,12 +125,13 @@ export function useCollection<TDocument>(
             const split = data.split('"');
             if (split[0].includes("equal")) {
               const condition = split[1];
-              const value = split[3];
+              const value = split[3].toString();
 
               return acc && document?.[condition] == value;
             }
             return acc;
           }, true);
+          console.log("validate", validate);
           if (validate) {
             switch (operation as DatabaseDocumentOperation) {
               // case "create":
@@ -160,19 +170,26 @@ export function useCollection<TDocument>(
                   document
                 );
                 queryClient.setQueryData<
-                  InfiniteData<
-                    Array<Models.DocumentList<DatabaseDocument<TDocument>>>
-                  >
+                  InfiniteData<Models.DocumentList<DatabaseDocument<TDocument>>>
                   /* @ts-ignore */
                 >(queryKey, (oldData) => {
+                  console.log("oldData", oldData);
                   if (!oldData) return oldData;
-                  const newData =
-                    oldData.pages[0][0].documents.unshift(document);
 
-                  return {
-                    ...oldData,
-                    pages: newData,
-                  };
+                  const newData = produce(oldData, (draft) => {
+                    if (finalOptions.addFirst)
+                      /* @ts-ignore */
+                      draft.pages[0].documents.unshift(document);
+                    else {
+                      /* @ts-ignore */
+                      draft.pages[draft.pages.length - 1].documents.push(
+                        /* @ts-ignore */
+                        document
+                      );
+                    }
+                  });
+                  // console.log("newData", newData);
+                  return newData;
                 });
                 break;
 
@@ -189,60 +206,67 @@ export function useCollection<TDocument>(
                   document
                 );
                 queryClient.setQueryData<
-                  InfiniteData<
-                    Array<Models.DocumentList<DatabaseDocument<TDocument>>>
-                  >
+                  InfiniteData<Models.DocumentList<DatabaseDocument<TDocument>>>
                   /* @ts-ignore */
                 >(queryKey, (oldData) => {
                   if (!oldData) return oldData;
-                  const newData = oldData.pages.map((page) =>
-                    page.map((collection) => {
-                      if (collection?.documents) {
-                        return collection.documents.map((storedDocument) => {
-                          if (storedDocument.$id !== document.$id) {
-                            return document;
-                          } else {
-                            return storedDocument;
-                          }
-                        });
-                      }
+                  /* @ts-ignore */
+                  const newData = produce(oldData, (draft) => {
+                    /* @ts-ignore */
+                    return {
+                      ...draft,
+                      pages: draft.pages.map((collection) => {
+                        let tmp = collection;
+                        if (collection?.documents) {
+                          /* @ts-ignore */
+                          tmp = collection.documents.map((storedDocument) => {
+                            if (storedDocument.$id === document.$id) {
+                              return document;
+                            } else {
+                              return storedDocument;
+                            }
+                          });
+                        }
 
-                      return collection;
-                    })
-                  );
+                        return { ...collection, documents: tmp };
+                      }),
+                    };
+                  });
+                  // console.log("newData", newData);
 
-                  return {
-                    ...oldData,
-                    pages: newData,
-                  };
+                  return newData;
                 });
                 break;
 
               case "delete":
                 queryClient.setQueryData<
-                  InfiniteData<
-                    Array<Models.DocumentList<DatabaseDocument<TDocument>>>
-                  >
+                  InfiniteData<Models.DocumentList<DatabaseDocument<TDocument>>>
                   /* @ts-ignore */
                 >(queryKey, (oldData) => {
                   if (!oldData) return oldData;
-                  const newData = oldData.pages.map((page) =>
-                    page.map((collection) => {
-                      if (collection?.documents) {
-                        return collection.documents.filter(
-                          (storedDocument) =>
-                            storedDocument.$id !== document.$id
-                        );
-                      }
+                  console.log("oldData", oldData);
+                  /* @ts-ignore */
+                  const newData = produce(oldData, (draft) => {
+                    /* @ts-ignore */
+                    return {
+                      ...draft,
+                      pages: draft.pages.map((collection) => {
+                        let tmp = collection;
+                        if (collection?.documents) {
+                          /* @ts-ignore */
+                          tmp = collection.documents.filter(
+                            (storedDocument) =>
+                              storedDocument.$id !== document.$id
+                          );
+                        }
 
-                      return collection;
-                    })
-                  );
+                        return { ...collection, documents: tmp };
+                      }),
+                    };
+                  });
+                  // console.log("newData", newData);
 
-                  return {
-                    ...oldData,
-                    pages: newData,
-                  };
+                  return newData;
                 });
 
                 break;
@@ -254,7 +278,7 @@ export function useCollection<TDocument>(
       return unsubscribe;
     }
     return;
-  }, [databaseId, collectionId, queryKey, options, queries]);
+  }, [databaseId, collectionId, queryKey, finalOptions, queries]);
 
   const flattenData = useMemo(() => {
     return {
@@ -262,6 +286,7 @@ export function useCollection<TDocument>(
       total: queryResult?.data?.pages[0].total,
     };
   }, [queryResult.data]);
+  console.log("queryResult", queryResult);
 
   return { ...queryResult, flattenData };
 }

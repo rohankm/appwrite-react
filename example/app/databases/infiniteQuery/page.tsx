@@ -9,7 +9,7 @@ import {
   DatabaseDocument,
   useDocumentDelete,
   useDocumentCreate,
-} from "react-appwrite/databases";
+} from "../../../../dist";
 import { FiTrash } from "react-icons/fi";
 
 type Article = DatabaseDocument<{
@@ -25,7 +25,9 @@ function InfiniteQuery() {
   //   "articles",
   //   "643866c6f386c9c982c1"
   // );
-  const data = useCollection<Article>("default", "dictionary");
+  const data = useCollection<Article>("default", "dictionary", undefined, {
+    addFirst: true,
+  });
 
   // const { data: publishedArticles } = useCollection<Article>(
   //   "default",
