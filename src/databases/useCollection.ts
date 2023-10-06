@@ -68,15 +68,13 @@ export function useCollection<TDocument>(
             queries
           );
         } else {
-          let tmp = await databases.listDocuments<DatabaseDocument<TDocument>>(
-            databaseId,
-            collectionId,
-            [...queries, Query.limit(100)]
-          );
+          const tmp = await databases.listDocuments<
+            DatabaseDocument<TDocument>
+          >(databaseId, collectionId, [...queries, Query.limit(100)]);
           const total = tmp.total;
           let documents = tmp.documents;
 
-          while (true) {
+          while (tmp) {
             const tmp2 = await databases.listDocuments<
               DatabaseDocument<TDocument>
             >(databaseId, collectionId, [
