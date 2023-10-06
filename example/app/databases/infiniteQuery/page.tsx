@@ -27,6 +27,7 @@ function InfiniteQuery() {
   // );
   const data = useCollection<Article>("default", "dictionary", undefined, {
     addFirst: true,
+    loadAll: true,
   });
 
   // const { data: publishedArticles } = useCollection<Article>(

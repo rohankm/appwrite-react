@@ -17,7 +17,7 @@ import type {
   DatabaseCollection,
 } from "./types";
 import produce from "immer";
-const DefaultOptions = { addFirst: false, realtime: true };
+const DefaultOptions = { addFirst: false, realTime: true, loadAll: false };
 
 /**
  * Fetches a collection from a database.
@@ -34,11 +34,13 @@ export function useCollection<TDocument>(
   queries: string[] = [],
   options: {
     addFirst?: boolean;
-    realtime?: boolean;
+    realTime?: boolean;
+    loadAll?: boolean;
   } = {
     // loadAll: false,
     addFirst: false,
-    realtime: true,
+    realTime: true,
+    loadAll: false,
   },
   queryOptions?: UseInfiniteQueryOptions<
     Models.DocumentList<DatabaseDocument<TDocument>>,
@@ -58,13 +60,41 @@ export function useCollection<TDocument>(
     queryKey,
     queryFn: async (param) => {
       // console.log("param", param);
-      if (!param.pageParam)
-        return await databases.listDocuments<DatabaseDocument<TDocument>>(
-          databaseId,
-          collectionId,
-          queries
-        );
-      else {
+      if (!param.pageParam) {
+        if (!finalOptions.loadAll) {
+          return await databases.listDocuments<DatabaseDocument<TDocument>>(
+            databaseId,
+            collectionId,
+            queries
+          );
+        } else {
+          let tmp = await databases.listDocuments<DatabaseDocument<TDocument>>(
+            databaseId,
+            collectionId,
+            [...queries, Query.limit(100)]
+          );
+          const total = tmp.total;
+          let documents = tmp.documents;
+
+          while (true) {
+            const tmp2 = await databases.listDocuments<
+              DatabaseDocument<TDocument>
+            >(databaseId, collectionId, [
+              ...queries,
+              Query.cursorAfter(documents[documents.length - 1].$id),
+              Query.limit(100),
+            ]);
+
+            documents = [...documents, ...tmp2.documents];
+            if (tmp2.documents.length < 100) {
+              break;
+            }
+          }
+          // console.log("total", total);
+          // console.log(documents);
+          return { documents, total };
+        }
+      } else {
         return await databases.listDocuments<DatabaseDocument<TDocument>>(
           databaseId,
           collectionId,
@@ -111,11 +141,11 @@ export function useCollection<TDocument>(
   });
   // console.log("finalOptions", finalOptions);
   useEffect(() => {
-    if (finalOptions.realtime) {
+    if (finalOptions.realTime) {
       const unsubscribe = databases.client.subscribe(
         `databases.${databaseId}.collections.${collectionId}.documents`,
         (response) => {
-          console.log("realtimeee");
+          // console.log("realTimeee");
           const [, operation] = response.events[0].match(
             /\.(\w+)$/
           ) as RegExpMatchArray;
@@ -131,7 +161,7 @@ export function useCollection<TDocument>(
             }
             return acc;
           }, true);
-          console.log("validate", validate);
+          // console.log("validate", validate);
           if (validate) {
             switch (operation as DatabaseDocumentOperation) {
               // case "create":
@@ -173,7 +203,7 @@ export function useCollection<TDocument>(
                   InfiniteData<Models.DocumentList<DatabaseDocument<TDocument>>>
                   /* @ts-ignore */
                 >(queryKey, (oldData) => {
-                  console.log("oldData", oldData);
+                  // console.log("oldData", oldData);
                   if (!oldData) return oldData;
 
                   const newData = produce(oldData, (draft) => {
@@ -244,7 +274,7 @@ export function useCollection<TDocument>(
                   /* @ts-ignore */
                 >(queryKey, (oldData) => {
                   if (!oldData) return oldData;
-                  console.log("oldData", oldData);
+                  // console.log("oldData", oldData);
                   /* @ts-ignore */
                   const newData = produce(oldData, (draft) => {
                     /* @ts-ignore */
@@ -286,7 +316,13 @@ export function useCollection<TDocument>(
       total: queryResult?.data?.pages[0].total,
     };
   }, [queryResult.data]);
-  console.log("queryResult", queryResult);
+  // console.log("queryResult", queryResult);
+
+  // useEffect(() => {
+  //   if (finalOptions.loadAll && queryResult.hasNextPage) {
+  //     queryResult.fetchNextPage();
+  //   }
+  // }, [queryResult, finalOptions.loadAll]);
 
   return { ...queryResult, flattenData };
 }
